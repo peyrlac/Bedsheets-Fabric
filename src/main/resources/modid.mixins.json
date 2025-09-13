@@ -5,7 +5,9 @@
 	"mixins": [
 		"BedBlockEntityAccessor",
 		"BedBlockEntityNbtMixin",
-		"BedBlockUseMixin"
+		"BedBlockUseMixin",
+		"BedBlockBreakMixin",
+		"PlayerSleepMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

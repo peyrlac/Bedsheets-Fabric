@@ -1,10 +1,15 @@
 package be.pierrelac.bedsheets.mixin;
 
 import be.pierrelac.bedsheets.data.SheetPattern;
+import net.minecraft.block.BedBlock;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BedBlockEntity;
+import net.minecraft.block.enums.BedPart;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import net.minecraft.block.entity.BlockEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -134,9 +139,31 @@ public class BedBlockEntityNbtMixin implements BedBlockEntityAccessor {
             return false;
         }
         
-        // TODO: Check if any player is sleeping in this bed
-        // This will need additional tracking or checking player sleep positions
-        return false; // Placeholder implementation
+        // Check if any player is sleeping in this bed
+        return world.getPlayers().stream()
+                   .anyMatch(player -> {
+                       if (!player.isSleeping()) {
+                           return false;
+                       }
+                       
+                       return player.getSleepingPosition()
+                                   .map(sleepPos -> {
+                                       // Check both head and foot positions
+                                       BlockState state = world.getBlockState(pos);
+                                       if (!(state.getBlock() instanceof BedBlock)) {
+                                           return false;
+                                       }
+                                       
+                                       Direction facing = state.get(BedBlock.FACING);
+                                       BedPart part = state.get(BedBlock.PART);
+                                       
+                                       BlockPos headPos = part == BedPart.HEAD ? pos : pos.offset(facing);
+                                       BlockPos footPos = part == BedPart.FOOT ? pos : pos.offset(facing.getOpposite());
+                                       
+                                       return sleepPos.equals(headPos) || sleepPos.equals(footPos);
+                                   })
+                                   .orElse(false);
+                   });
     }
     
     /**
@@ -152,8 +179,33 @@ public class BedBlockEntityNbtMixin implements BedBlockEntityAccessor {
             return; // Only sync on server
         }
         
-        // TODO: Find the other half and sync data
-        // This requires determining which half this is and finding the other
-        // Will be implemented when BedBlock mixin is ready
+        // Get the current bed state to determine which half this is
+        BlockState state = world.getBlockState(pos);
+        if (!(state.getBlock() instanceof BedBlock)) {
+            return;
+        }
+        
+        // Find the other half
+        BedPart part = state.get(BedBlock.PART);
+        Direction facing = state.get(BedBlock.FACING);
+        BlockPos otherHalfPos;
+        
+        if (part == BedPart.HEAD) {
+            // This is head, find foot
+            otherHalfPos = pos.offset(facing.getOpposite());
+        } else {
+            // This is foot, find head
+            otherHalfPos = pos.offset(facing);
+        }
+        
+        // Sync data to other half
+        BlockEntity otherBlockEntity = world.getBlockEntity(otherHalfPos);
+        if (otherBlockEntity instanceof BedBlockEntityNbtMixin otherMixin) {
+            otherMixin.bedsheets$sheetPattern = this.bedsheets$sheetPattern != null ? 
+                this.bedsheets$sheetPattern.copy() : null;
+            otherMixin.bedsheets$messiness = this.bedsheets$messiness;
+            otherMixin.bedsheets$sheetOwner = this.bedsheets$sheetOwner;
+            otherBlockEntity.markDirty();
+        }
     }
 }

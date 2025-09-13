@@ -55,6 +55,11 @@ public class SleepHooks {
      * @param messiness Current messiness level of the bed
      */
     public static void onSleepStart(ServerPlayerEntity player, BlockPos bedHeadPos, int messiness) {
+        // Get actual messiness from bed if not provided
+        if (messiness < 0) {
+            messiness = getBedMessiness(player.getWorld(), bedHeadPos);
+        }
+        
         BedSheetsConfig config = BedSheetsMod.getConfig();
         float regenRate = config.getRegenRate(messiness);
         
@@ -64,6 +69,30 @@ public class SleepHooks {
         
         BedSheetsMod.LOGGER.debug("Player {} started sleeping at {} with messiness {} (regen: {} HP/s)", 
                                 player.getName().getString(), bedHeadPos, messiness, regenRate);
+    }
+    
+    /**
+     * Alternative method that automatically gets messiness from bed.
+     * @param player The player who started sleeping
+     * @param bedHeadPos Position of the bed head block
+     */
+    public static void onSleepStart(ServerPlayerEntity player, BlockPos bedHeadPos) {
+        int messiness = getBedMessiness(player.getWorld(), bedHeadPos);
+        onSleepStart(player, bedHeadPos, messiness);
+    }
+    
+    /**
+     * Gets the messiness level from a bed block entity.
+     * @param world The world containing the bed
+     * @param bedHeadPos Position of the bed head block
+     * @return Messiness level (0-3)
+     */
+    private static int getBedMessiness(net.minecraft.world.World world, BlockPos bedHeadPos) {
+        BlockEntity blockEntity = world.getBlockEntity(bedHeadPos);
+        if (blockEntity instanceof BedBlockEntityAccessor accessor) {
+            return accessor.bedsheets$getMessiness();
+        }
+        return 0; // Default to clean bed
     }
     
     /**

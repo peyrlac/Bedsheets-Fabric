@@ -6,6 +6,8 @@ import be.pierrelac.bedsheets.mixin.BedBlockEntityAccessor;
 import be.pierrelac.bedsheets.util.BedNeighbors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.block.BedBlock;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BedBlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
@@ -57,8 +59,11 @@ public class BedSheetRenderer {
         int messiness = accessor.bedsheets$getMessiness();
         BlockPos pos = bedBlockEntity.getPos();
         
-        // TODO: Determine bed facing direction from block state
-        Direction bedFacing = Direction.NORTH; // Placeholder
+        // Get bed facing direction from block state
+        Direction bedFacing = getBedFacing(bedBlockEntity);
+        if (bedFacing == null) {
+            return; // Not a valid bed
+        }
         
         // Find contiguous beds for merged rendering
         List<BlockPos> bedGroup = BedNeighbors.findGroup(bedBlockEntity.getWorld(), pos, bedFacing);
@@ -68,7 +73,25 @@ public class BedSheetRenderer {
         
         // Render the sheet
         renderSheetMesh(matrices, vertexConsumers, pattern, messiness, bedGroup, 
-                       sleepingPlayer, light, overlay);
+                       sleepingPlayer, bedFacing, light, overlay);
+    }
+    
+    /**
+     * Gets the facing direction of a bed from its block state.
+     * @param bedBlockEntity The bed block entity
+     * @return The facing direction or null if not a bed
+     */
+    private static Direction getBedFacing(BedBlockEntity bedBlockEntity) {
+        if (bedBlockEntity.getWorld() == null) {
+            return null;
+        }
+        
+        BlockState state = bedBlockEntity.getWorld().getBlockState(bedBlockEntity.getPos());
+        if (state.getBlock() instanceof BedBlock) {
+            return state.get(BedBlock.FACING);
+        }
+        
+        return null;
     }
     
     /**
@@ -76,7 +99,7 @@ public class BedSheetRenderer {
      */
     private static void renderSheetMesh(MatrixStack matrices, VertexConsumerProvider vertexConsumers,
                                       SheetPattern pattern, int messiness, List<BlockPos> bedGroup,
-                                      PlayerEntity sleepingPlayer, int light, int overlay) {
+                                      PlayerEntity sleepingPlayer, Direction bedFacing, int light, int overlay) {
         
         // Get or generate texture for this pattern
         Identifier texture = getOrCreateSheetTexture(pattern, messiness);
@@ -88,7 +111,7 @@ public class BedSheetRenderer {
         
         try {
             // Calculate sheet bounds based on bed group
-            int[] bounds = BedNeighbors.calculateGroupBounds(bedGroup, Direction.NORTH); // TODO: Use actual facing
+            int[] bounds = BedNeighbors.calculateGroupBounds(bedGroup, bedFacing);
             float minX = bounds[0];
             float minZ = bounds[1]; 
             float maxX = bounds[2] + 1.0f;
