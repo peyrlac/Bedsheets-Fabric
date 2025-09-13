@@ -1,25 +1,25 @@
 {
 	"schemaVersion": 1,
-	"id": "modid",
+	"id": "bedsheets",
 	"version": "${version}",
-	"name": "Example mod",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"name": "BedSheets",
+	"description": "Adds custom bedsheet patterns using banners, messiness states, and enhanced sleep mechanics",
 	"authors": [
-		"Me!"
+		"be.pierrelac"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://github.com/pierrequiroul/Bedsheets-Fabric",
+		"sources": "https://github.com/pierrequiroul/Bedsheets-Fabric"
 	},
-	"license": "CC0-1.0",
-	"icon": "assets/modid/icon.png",
+	"license": "MIT",
+	"icon": "assets/bedsheets/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"com.example.ExampleMod"
+			"be.pierrelac.bedsheets.BedSheetsMod"
 		],
 		"client": [
-			"com.example.ExampleModClient"
+			"be.pierrelac.bedsheets.client.BedSheetsClient"
 		]
 	},
 	"mixins": [
@@ -30,12 +30,12 @@
 		}
 	],
 	"depends": {
-		"fabricloader": ">=0.15.10",
-		"minecraft": "~1.20.6",
-		"java": ">=21",
+		"fabricloader": ">=0.14.21",
+		"minecraft": "~1.20.1",
+		"java": ">=17",
 		"fabric-api": "*"
 	},
 	"suggests": {
-		"another-mod": "*"
+		"modmenu": "*"
 	}
 }
